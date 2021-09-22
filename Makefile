@@ -3,7 +3,7 @@
 ICON="🔞"
 
 # 项目的二进制命令
-COMMANDS=grab2b
+COMMANDS=grab2b show2b
 
 BINARIES=$(addprefix bin/,$(COMMANDS))
 
