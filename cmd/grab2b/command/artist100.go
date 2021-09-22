@@ -5,8 +5,8 @@ import (
 	"github.com/zengqiang96/grab2b/internal"
 )
 
-var hot100 = &cli.Command{
-	Name: "hot100",
+var artist100 = &cli.Command{
+	Name: "artist100",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:    "date",
@@ -14,5 +14,5 @@ var hot100 = &cli.Command{
 			Usage:   "日期，格式如 YYYY-MM-DD",
 		},
 	},
-	Action: internal.Hot100Action,
+	Action: internal.Artist100Action,
 }

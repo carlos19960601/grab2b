@@ -3,15 +3,33 @@ package internal
 import (
 	"fmt"
 	"log"
-	"strconv"
+	"os"
 
 	"github.com/gocolly/colly"
+	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
+)
+
+var (
+	header = []string{"rank", "trend", "song", "artist", "delta", "last", "peak", "weeks"}
 )
 
 func Hot100Action(ctx *cli.Context) error {
 	date := ctx.String("date")
 	url := fmt.Sprintf("https://www.billboard.com/charts/hot-100/%s", date)
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(header)
+	table.SetBorder(false)
+	table.SetRowLine(true)
+	table.SetAlignment(tablewriter.ALIGN_CENTER)
+	table.SetAutoWrapText(false)
+
+	headerColors := make([]tablewriter.Colors, len(header))
+	for index := range header {
+		headerColors[index] = tablewriter.Color(tablewriter.FgHiYellowColor)
+	}
+	table.SetHeaderColor(headerColors...)
 
 	c := colly.NewCollector()
 
@@ -26,18 +44,10 @@ func Hot100Action(ctx *cli.Context) error {
 	// }
 	// fmt.Println("  Body       :\n", resp)
 
-	hot100 := Hot100{
-		Chart: make([]*ChartElement, 100),
-	}
-
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
 	c.OnHTML("li.chart-list__element", func(e *colly.HTMLElement) {
-		rank, err := strconv.Atoi(e.ChildText("span.chart-element__rank__number"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
+		rank := e.ChildText("span.chart-element__rank__number")
 		trend := e.ChildText("span.chart-element__trend")
 		song := e.ChildText("span.chart-element__information__song")
 		artist := e.ChildText("span.chart-element__information__artist")
@@ -46,18 +56,7 @@ func Hot100Action(ctx *cli.Context) error {
 		peak := e.ChildText("span.chart-element__meta.text--peak")
 		week := e.ChildText("span.chart-element__meta.text--week")
 
-		ele := ChartElement{
-			Rank:   rank,
-			Trend:  trend,
-			Song:   song,
-			Artist: artist,
-			Delta:  delta,
-			Last:   last,
-			Peak:   peak,
-			Week:   week,
-		}
-
-		hot100.Chart[ele.Rank-1] = &ele
+		table.Append([]string{rank, trend, song, artist, delta, last, peak, week})
 	})
 
 	err := c.Visit(url)
@@ -67,10 +66,6 @@ func Hot100Action(ctx *cli.Context) error {
 
 	c.Wait()
 
-	log.Println("rank trend song artist delta last peak week")
-	for _, ele := range hot100.Chart {
-		log.Printf("%d %s %s %s %s %s %s %s \n", ele.Rank, ele.Trend, ele.Song, ele.Artist, ele.Delta, ele.Last, ele.Peak, ele.Week)
-	}
-
+	table.Render()
 	return nil
 }

@@ -9,6 +9,8 @@ func App() *cli.App {
 
 	app.Commands = []*cli.Command{
 		hot100,
+		artist100,
+		year100,
 	}
 
 	return app
