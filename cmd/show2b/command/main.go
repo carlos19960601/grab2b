@@ -10,10 +10,6 @@ func App() *cli.App {
 	app.Name = "show2b"
 	app.Description = "billboard tui"
 
-	app.Commands = []*cli.Command{
-		run,
-	}
-
 	app.Action = show2b.RunAction
 
 	return app
