@@ -1,8 +1,6 @@
 package show2b
 
 import (
-	"fmt"
-
 	"github.com/rivo/tview"
 	"github.com/zengqiang96/grab2b/internal/proto"
 )
@@ -20,54 +18,32 @@ type SongView struct {
 }
 
 func (view *SongView) Refresh() {
-	pageCount := view.SongPages.GetPageCount()
-	if pageCount == 0 {
-		view.InitPages()
-	}
+	view.RemoveAllPages()
 
-	for pageCount > 0 {
-		pageName, pageItem := view.SongPages.GetFrontPage()
-
-		ps := 0
-		for row, song := range view.Songs {
-			table := pageItem.(*tview.Table)
-			table.SetCell(row+1, 0, tview.NewTableCell(song.Rank))
-			table.SetCell(row+1, 1, tview.NewTableCell(song.Song))
-			table.SetCell(row+1, 2, tview.NewTableCell(song.Artist))
-			if ps
+	for index, pageName := range PageNames {
+		songs := view.Songs[PageSize*index : PageSize*(index+1)]
+		t := tview.NewTable()
+		for hcol, header := range view.Header {
+			t.SetCell(0, hcol, tview.NewTableCell(header))
 		}
 
-	}
-
-	for pageNo, pageName := range PageNames {
-	}
-
-	t := tview.NewTable()
-	for index, header := range year100Header {
-		t.SetCell(0, index, tview.NewTableCell(header))
-	}
-	for row, song := range songs {
-		p := row/25 + 1
-		t.SetCell(row+1, 0, tview.NewTableCell(song.Rank))
-		t.SetCell(row+1, 1, tview.NewTableCell(song.Song))
-		t.SetCell(row+1, 2, tview.NewTableCell(song.Artist))
-
-		if row%25 == 0 {
-			ui.songsPanel.AddPage(fmt.Sprintf("Page-%d", p), t, false, true)
-			t = tview.NewTable()
-			for index, header := range year100Header {
-				t.SetCell(0, index, tview.NewTableCell(header))
-			}
+		for row, song := range songs {
+			t.SetCell(row+1, 0, tview.NewTableCell(song.Rank))
+			t.SetCell(row+1, 1, tview.NewTableCell(song.Song))
+			t.SetCell(row+1, 2, tview.NewTableCell(song.Artist))
 		}
+		view.SongPages.AddPage(pageName, t, false, index == 0)
 	}
+
+	view.SongPages.ShowPage(PageNames[0])
 }
 
-func (view *SongView) RemoveAndInit(header []string) {
+func (view *SongView) RemoveAndInit() {
 	for pageNo, pageName := range PageNames {
 		view.SongPages.RemovePage(pageName)
 
 		t := tview.NewTable()
-		for index, h := range header {
+		for index, h := range view.Header {
 			t.SetCell(0, index, tview.NewTableCell(h))
 		}
 

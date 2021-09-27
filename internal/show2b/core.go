@@ -23,3 +23,8 @@ func (kb KeyBindings) SearchKey(k tcell.Key) string {
 
 	return ""
 }
+
+type OutputMessage struct {
+	Color   tcell.Color
+	Message string
+}

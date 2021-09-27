@@ -1,6 +1,9 @@
 package show2b
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/zengqiang96/grab2b/internal/api"
@@ -16,10 +19,11 @@ type TUI struct {
 	yearPanel *tview.InputField
 	datePanel *tview.InputField
 
-	songsPanel      *tview.Pages
+	songsPanel      *tview.Table
 	songActionPanel *tview.Flex
 
 	outputPanel *tview.List
+	outputChan  chan OutputMessage
 
 	focusPrimitives   []tview.Primitive
 	currentFocusIndex int
@@ -32,6 +36,7 @@ func NewTUI() *TUI {
 		client:            api.New(),
 		currentFocusIndex: -1,
 		keyBindings:       NewKeyBinding(),
+		outputChan:        make(chan OutputMessage, 100),
 	}
 
 	ui.app = tview.NewApplication()
@@ -77,6 +82,12 @@ func NewTUI() *TUI {
 }
 
 func (ui *TUI) Start() error {
+	go func() {
+		for out := range ui.outputChan {
+			ui.outputPanel.AddItem(fmt.Sprintf("%d | [%s] %s", ui.outputPanel.GetItemCount(), time.Now().Format(time.RFC3339), out.Message), "", 0, nil)
+			ui.outputPanel.SetCurrentItem(-1)
+		}
+	}()
 	return ui.app.SetRoot(ui.layout, true).Run()
 }
 
@@ -88,18 +99,28 @@ func (ui *TUI) createYearPanel() *tview.InputField {
 			return
 		}
 		var text = yearPanel.GetText()
+		if len(text) == 0 {
+			return
+		}
+
 		songs, err := ui.client.Year100(text)
 		if err != nil {
-			// TODO
+			ui.outputChan <- OutputMessage{Message: fmt.Sprintf("err: %s", err.Error())}
+			return
 		}
 
-		songView := SongView{
-			Header:    year100Header,
-			SongPages: ui.songsPanel,
-			Songs:     songs,
+		for hcol, header := range year100Header {
+			ui.songsPanel.SetCell(0, hcol, tview.NewTableCell(header))
+		}
+		for row, song := range songs {
+			ui.songsPanel.SetCell(row+1, 0, tview.NewTableCell(fmt.Sprintf(" %s", song.Rank)))
+			ui.songsPanel.SetCell(row+1, 1, tview.NewTableCell(song.Song))
+			ui.songsPanel.SetCell(row+1, 2, tview.NewTableCell(song.Artist))
 		}
 
-		songView.Refresh()
+		ui.focusPrimitives = append(ui.focusPrimitives, ui.songsPanel)
+
+		yearPanel.SetText("")
 	})
 
 	yearPanel.SetBorder(true).SetTitle(" Year Input ")
@@ -112,8 +133,8 @@ func (ui *TUI) createDatePanel() *tview.InputField {
 	return dataPanel
 }
 
-func (ui *TUI) createSongsPanel() *tview.Pages {
-	songsPanel := tview.NewPages()
+func (ui *TUI) createSongsPanel() *tview.Table {
+	songsPanel := tview.NewTable()
 	songsPanel.SetBorder(true).SetTitle(" songs ")
 	return songsPanel
 }
@@ -121,6 +142,5 @@ func (ui *TUI) createSongsPanel() *tview.Pages {
 func (ui *TUI) createOutputPanel() *tview.List {
 	outputPanel := tview.NewList()
 	outputPanel.SetBorder(true).SetTitle(" output ")
-	outputPanel.AddItem("mainText string", "secondaryText string", 0, nil)
 	return outputPanel
 }

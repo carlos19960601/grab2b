@@ -15,7 +15,7 @@ type Client struct {
 
 func New() *Client {
 	return &Client{
-		collector: colly.NewCollector(),
+		collector: colly.NewCollector(colly.AllowURLRevisit()),
 	}
 }
 
@@ -62,7 +62,6 @@ func (c *Client) Hot100(date string) ([]proto.SongEntity, error) {
 
 func (c *Client) Year100(year string) ([]proto.SongEntity, error) {
 	songs := make([]proto.SongEntity, 0, 100)
-
 	url := "https://www.billboard.com/charts/year-end/hot-100-songs"
 	if len(year) > 0 {
 		url = fmt.Sprintf("https://www.billboard.com/charts/year-end/%s/hot-100-songs", year)
